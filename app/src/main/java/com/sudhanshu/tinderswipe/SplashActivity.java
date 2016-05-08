@@ -1,4 +1,4 @@
-package com.nkdroid.tinderswipe;
+package com.sudhanshu.tinderswipe;
 
 import android.content.Intent;
 import android.os.Bundle;

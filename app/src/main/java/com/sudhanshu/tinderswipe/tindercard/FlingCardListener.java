@@ -1,4 +1,4 @@
-package com.nkdroid.tinderswipe.tindercard;
+package com.sudhanshu.tinderswipe.tindercard;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -9,16 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
-
-import com.nkdroid.tinderswipe.MainActivity;
-
-
-/**
- * Created by dionysis_lorentzos on 5/8/14
- * for package com.lorentzos.swipecards
- * and project Swipe cards.
- * Use with caution dinausaurs might appear!
- */
 
 
 public class FlingCardListener implements View.OnTouchListener {
@@ -48,6 +38,11 @@ public class FlingCardListener implements View.OnTouchListener {
     private int touchPosition;
     private boolean isAnimationRunning = false;
     private float MAX_COS = (float) Math.cos(Math.toRadians(45));
+    public float x1;
+    public float x2;
+    static final int MIN_DISTANCE = 150;
+    boolean swipeRight = false;
+    boolean swipeLeft = false;
 
 
     public FlingCardListener(View frame, Object itemAtPosition, FlingListener flingListener) {
@@ -74,109 +69,43 @@ public class FlingCardListener implements View.OnTouchListener {
 
     public boolean onTouch(View view, MotionEvent event) {
 
-        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+        switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-
-                // from http://android-developers.blogspot.com/2010/06/making-sense-of-multitouch.html
-                // Save the ID of this pointer
-                MainActivity.removeBackground();
-
-
-                mActivePointerId = event.getPointerId(0);
-                float x = 0;
-                float y = 0;
-                boolean success = false;
-                try {
-                    x = event.getX(mActivePointerId);
-                    y = event.getY(mActivePointerId);
-                    success = true;
-                } catch (IllegalArgumentException e) {
-                    Log.w(TAG, "Exception in onTouch(view, event) : " + mActivePointerId, e);
-                }
-                if (success) {
-                    // Remember where we started
-                    aDownTouchX = x;
-                    aDownTouchY = y;
-                    //to prevent an initial jump of the magnifier, aposX and aPosY must
-                    //have the values from the magnifier frame
-                    if (aPosX == 0) {
-                        aPosX = frame.getX();
-                    }
-                    if (aPosY == 0) {
-                        aPosY = frame.getY();
-                    }
-
-                    if (y < objectH / 2) {
-                        touchPosition = TOUCH_ABOVE;
-                    } else {
-                        touchPosition = TOUCH_BELOW;
-                    }
-                }
-
-                view.getParent().requestDisallowInterceptTouchEvent(true);
+                x1 = event.getX();
                 break;
-
             case MotionEvent.ACTION_UP:
-                mActivePointerId = INVALID_POINTER_ID;
-                resetCardViewOnStack();
-                view.getParent().requestDisallowInterceptTouchEvent(false);
-                break;
+                x2 = event.getX();
+                float deltaX = x2 - x1;
 
-            case MotionEvent.ACTION_POINTER_DOWN:
-                break;
+                if (Math.abs(deltaX) > MIN_DISTANCE) {
+                    // Left to Right swipe action
+                    if (x2 > x1) {
+                        Log.i(TAG, "Left to Right");
+                        swipeRight = true;
+                        swipeLeft = false;
+                        resetCardViewOnStack();
 
-            case MotionEvent.ACTION_POINTER_UP:
-                // Extract the index of the pointer that left the touch sensor
-                final int pointerIndex = (event.getAction() &
-                        MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
-                final int pointerId = event.getPointerId(pointerIndex);
-                if (pointerId == mActivePointerId) {
-                    // This was our active pointer going up. Choose a new
-                    // active pointer and adjust accordingly.
-                    final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-                    mActivePointerId = event.getPointerId(newPointerIndex);
+                    }
+
+
+                    // Right to left swipe action
+                    else {
+                        Log.i(TAG, "Right to Left");
+                        swipeLeft = true;
+                        swipeRight = false;
+                        resetCardViewOnStack();
+                    }
+
+                } else {
+                    Log.i(TAG, "Please swipe for more distance");
                 }
+                // consider as something else - a screen tap for example
+
                 break;
-            case MotionEvent.ACTION_MOVE:
-
-                // Find the index of the active pointer and fetch its position
-                final int pointerIndexMove = event.findPointerIndex(mActivePointerId);
-                final float xMove = event.getX(pointerIndexMove);
-                final float yMove = event.getY(pointerIndexMove);
-
-                //from http://android-developers.blogspot.com/2010/06/making-sense-of-multitouch.html
-                // Calculate the distance moved
-                final float dx = xMove - aDownTouchX;
-                final float dy = yMove - aDownTouchY;
-
-
-                // Move the frame
-                aPosX += dx;
-                aPosY += dy;
-
-                // calculate the rotation degrees
-                float distobjectX = aPosX - objectX;
-                float rotation = BASE_ROTATION_DEGREES * 2.f * distobjectX / parentWidth;
-                if (touchPosition == TOUCH_BELOW) {
-                    rotation = -rotation;
-                }
-
-                //in this area would be code for doing something with the view as the frame moves.
-                frame.setX(aPosX);
-                frame.setY(aPosY);
-                frame.setRotation(rotation);
-                mFlingListener.onScroll(getScrollProgressPercent());
-                break;
-
-            case MotionEvent.ACTION_CANCEL: {
-                mActivePointerId = INVALID_POINTER_ID;
-                view.getParent().requestDisallowInterceptTouchEvent(false);
-                break;
-            }
         }
-
         return true;
     }
+
 
     private float getScrollProgressPercent() {
         if (movedBeyondLeftBorder()) {
@@ -190,13 +119,13 @@ public class FlingCardListener implements View.OnTouchListener {
     }
 
     private boolean resetCardViewOnStack() {
-        if (movedBeyondLeftBorder()) {
+        if (swipeLeft) {
             // Left Swipe
-            onSelected(true, getExitPoint(-objectW), 100);
+            onSelected(true);
             mFlingListener.onScroll(-1.0f);
-        } else if (movedBeyondRightBorder()) {
+        } else if (swipeRight) {
             // Right Swipe
-            onSelected(false, getExitPoint(parentWidth), 100);
+            onSelected(false);
             mFlingListener.onScroll(1.0f);
         } else {
             float abslMoveDistance = Math.abs(aPosX - objectX);
@@ -236,22 +165,28 @@ public class FlingCardListener implements View.OnTouchListener {
     }
 
 
-    public void onSelected(final boolean isLeft,
-                           float exitY, long duration) {
-
-        isAnimationRunning = true;
+    public void onSelected(final boolean isLeft) {
+//
+//        if (isLeft) {
+//            mFlingListener.onCardExited();
+//            mFlingListener.leftExit(dataObject);
+//        } else {
+//            mFlingListener.onCardExited();
+//            mFlingListener.rightExit(dataObject);
+//        }
+//        isAnimationRunning = true;
         float exitX;
         if (isLeft) {
             exitX = -objectW - getRotationWidthOffset();
         } else {
             exitX = parentWidth + getRotationWidthOffset();
         }
-
+//
         this.frame.animate()
-                .setDuration(duration)
+                .setDuration(200)
                 .setInterpolator(new AccelerateInterpolator())
                 .x(exitX)
-                .y(exitY)
+//                .y(exitY)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -274,7 +209,7 @@ public class FlingCardListener implements View.OnTouchListener {
      */
     public void selectLeft() {
         if (!isAnimationRunning)
-            onSelected(true, objectY, 200);
+            onSelected(true);
     }
 
     /**
@@ -282,24 +217,24 @@ public class FlingCardListener implements View.OnTouchListener {
      */
     public void selectRight() {
         if (!isAnimationRunning)
-            onSelected(false, objectY, 200);
+            onSelected(false);
     }
 
 
-    private float getExitPoint(int exitXPoint) {
-        float[] x = new float[2];
-        x[0] = objectX;
-        x[1] = aPosX;
-
-        float[] y = new float[2];
-        y[0] = objectY;
-        y[1] = aPosY;
-
-        LinearRegression regression = new LinearRegression(x, y);
-
-        //Your typical y = ax+b linear regression
-        return (float) regression.slope() * exitXPoint + (float) regression.intercept();
-    }
+//    private float getExitPoint(int exitXPoint) {
+//        float[] x = new float[2];
+//        x[0] = objectX;
+//        x[1] = aPosX;
+//
+//        float[] y = new float[2];
+//        y[0] = objectY;
+//        y[1] = aPosY;
+//
+//        LinearRegression regression = new LinearRegression(x, y);
+//
+//        //Your typical y = ax+b linear regression
+//        return (float) regression.slope() * exitXPoint + (float) regression.intercept();
+   // }
 
     private float getExitRotation(boolean isLeft) {
         float rotation = BASE_ROTATION_DEGREES * 2.f * (parentWidth - objectX) / parentWidth;
