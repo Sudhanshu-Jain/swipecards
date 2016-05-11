@@ -51,6 +51,25 @@ public class SwipeFlingAdapterView extends FlingAdapterView {
         a.recycle();
     }
 
+
+    /**
+     * A shortcut method to set both the listeners and the adapter.
+     *
+     * @param context  The activity context which extends onFlingListener, OnItemClickListener or both
+     * @param mAdapter The adapter you have to set.
+     */
+    public void init(final Context context, Adapter mAdapter) {
+        if (context instanceof onFlingListener) {
+            mFlingListener = (onFlingListener) context;
+        } else {
+            throw new RuntimeException("Activity does not implement SwipeFlingAdapterView.onFlingListener");
+        }
+        if (context instanceof OnItemClickListener) {
+            mOnItemClickListener = (OnItemClickListener) context;
+        }
+        setAdapter(mAdapter);
+    }
+
     @Override
     public View getSelectedView() {
         return mActiveCard;
@@ -67,7 +86,7 @@ public class SwipeFlingAdapterView extends FlingAdapterView {
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-
+        // if we don't have an adapter, we don't need to do anything
         if (mAdapter == null) {
             return;
         }
@@ -95,8 +114,6 @@ public class SwipeFlingAdapterView extends FlingAdapterView {
                 setTopView();
             }
         }
-
-
 
         mInLayout = false;
 
@@ -181,6 +198,10 @@ public class SwipeFlingAdapterView extends FlingAdapterView {
         child.layout(childLeft, childTop, childLeft + w, childTop + h);
     }
 
+
+    /**
+     * Set the top view and add the fling listener
+     */
     private void setTopView() {
         if (getChildCount() > 0) {
 
@@ -224,6 +245,20 @@ public class SwipeFlingAdapterView extends FlingAdapterView {
         }
     }
 
+    public FlingCardListener getTopCardListener() throws NullPointerException {
+        if (flingCardListener == null) {
+            throw new NullPointerException();
+        }
+        return flingCardListener;
+    }
+
+    public void setMaxVisible(int MAX_VISIBLE) {
+        this.MAX_VISIBLE = MAX_VISIBLE;
+    }
+
+    public void setMinStackInAdapter(int MIN_ADAPTER_STACK) {
+        this.MIN_ADAPTER_STACK = MIN_ADAPTER_STACK;
+    }
 
     @Override
     public Adapter getAdapter() {

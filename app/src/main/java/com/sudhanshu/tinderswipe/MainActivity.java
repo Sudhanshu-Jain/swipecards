@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements FlingCardListener
     public int mIndex =0;
 
     public boolean isLeftCorrect;
+    public boolean isRightCorrect;
     public static void removeBackground() {
 
 
@@ -66,32 +67,33 @@ public class MainActivity extends AppCompatActivity implements FlingCardListener
             public void onLeftCardExit(Object dataObject) {
                 al.remove(0);
                 isLeftCorrect = true;
+                isRightCorrect = false;
 //
-//                while(myAppAdapter.getCount()>0) {
-//                    int n = al.size() - myAppAdapter.getCount();
-//                    answers[n] = "left";
-//                }
+//
                 myAppAdapter.notifyDataSetChanged();
-                //Do something on the left!
-                //You also have access to the original object.
-                //If you want to use it just cast it (String) dataObject
+
 
             }
 
             @Override
             public void onRightCardExit(Object dataObject) {
+                isRightCorrect = true;
                 isLeftCorrect = false;
                 String answer = "right";
                 al.remove(0);
-//                while(myAppAdapter.getCount()>0) {
-//                    int n = al.size() - myAppAdapter.getCount();
-//                    answers[n] = "right";
-//                }
                 myAppAdapter.notifyDataSetChanged();
             }
 
             @Override
             public void onAdapterAboutToEmpty(int itemsInAdapter) {
+                if(isLeftCorrect){
+                    answerlist.add("left");
+                    isLeftCorrect = false;
+                }else if(isRightCorrect) {
+                    answerlist.add("right");
+                    isRightCorrect = false;
+                }
+
                 if(itemsInAdapter==0){
                     Intent intent = new Intent(MainActivity.this,ResultActivity.class);
                     intent.putExtra("answer-key",answerlist);
@@ -102,21 +104,15 @@ public class MainActivity extends AppCompatActivity implements FlingCardListener
 
             @Override
             public void onScroll(float scrollProgressPercent) {
-                if(isLeftCorrect){
-                    answerlist.add("left");
-                }else {
-                    answerlist.add("right");
-                }
+
 
                 View view = flingContainer.getSelectedView();
                 view.findViewById(R.id.background).setAlpha(0);
-//                view.findViewById(R.id.item_swipe_right_indicator).setAlpha(scrollProgressPercent < 0 ? -scrollProgressPercent : 0);
-//                view.findViewById(R.id.item_swipe_left_indicator).setAlpha(scrollProgressPercent > 0 ? scrollProgressPercent : 0);
             }
         });
 
 
-        // Optionally add an OnItemClickListener
+
         flingContainer.setOnItemClickListener(new SwipeFlingAdapterView.OnItemClickListener() {
             @Override
             public void onItemClicked(int itemPosition, Object dataObject) {
@@ -192,28 +188,9 @@ public class MainActivity extends AppCompatActivity implements FlingCardListener
                 viewHolder = (ViewHolder) convertView.getTag();
             }
             viewHolder.questionText.setText(questionList.get(position).getQuestion() + "");
-//            Target target = new Target() {
-//                @Override
-//                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-//                    Log.i("Bitmap loaded","qqqqq");
-//                }
-//
-//                @Override
-//                public void onBitmapFailed(Drawable errorDrawable) {
-//                    Log.i("Bitmap loaded unsuccess","qqqqq");
-//                }
-//
-//                @Override
-//                public void onPrepareLoad(Drawable placeHolderDrawable) {
-//
-//                }
-//
-////
-//            };
             Picasso.with(MainActivity.this).load(questionList.get(position).getImageUrl1()).fit().into(viewHolder.image1);
             Picasso.with(MainActivity.this).load(questionList.get(position).getImageUrl2()).fit().into(viewHolder.image2);
-//            Glide.with(MainActivity.this).load(questionList.get(position).getImageUrl1()).into(viewHolder.image1);
-//            Glide.with(MainActivity.this).load(questionList.get(position).getImageUrl2()).into(viewHolder.image2);
+
             return rowView;
         }
     }
